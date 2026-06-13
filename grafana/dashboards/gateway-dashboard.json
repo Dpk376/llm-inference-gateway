@@ -1,0 +1,74 @@
+{
+  "id": null,
+  "title": "LLM Inference Gateway",
+  "tags": ["llm", "gateway", "inference"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request Rate (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_requests_total[1m])) by (backend, status)",
+          "legendFormat": "{{backend}} {{status}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Latency Percentiles (ms)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(gateway_request_latency_seconds_bucket[1m])) by (le, backend)) * 1000",
+          "legendFormat": "{{backend}} p99"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(gateway_request_latency_seconds_bucket[1m])) by (le, backend)) * 1000",
+          "legendFormat": "{{backend}} p95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Active Requests (Queue Depth)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "gateway_active_requests",
+          "legendFormat": "{{backend}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Circuit Breaker State",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_state",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "CLOSED" } } },
+            { "type": "value", "options": { "1": { "text": "HALF_OPEN" } } },
+            { "type": "value", "options": { "2": { "text": "OPEN" } } }
+          ]
+        }
+      }
+    }
+  ]
+}

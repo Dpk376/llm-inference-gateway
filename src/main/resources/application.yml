@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: llm-inference-gateway
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        gateway.request.latency: true
+      percentiles:
+        gateway.request.latency: 0.5, 0.95, 0.99
+
+gateway:
+  routing:
+    latency-weight: 0.7
+    load-weight: 0.3
+    health-check-interval-ms: 10000
+  circuit-breaker:
+    failure-rate-threshold: 50
+    slow-call-threshold-ms: 5000
+    wait-duration-in-open-ms: 30000
+  backends:
+    - id: backend-a
+      url: http://localhost:8001
+      model: llama3-8b
+    - id: backend-b
+      url: http://localhost:8002
+      model: llama3-8b
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      backend-a:
+        register-health-indicator: true
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+      backend-b:
+        register-health-indicator: true
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
