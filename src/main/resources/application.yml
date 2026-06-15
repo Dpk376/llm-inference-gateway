@@ -1,6 +1,10 @@
 spring:
   application:
     name: llm-inference-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 server:
   port: 8080
@@ -24,6 +28,20 @@ management:
         gateway.request.latency: 0.5, 0.95, 0.99
 
 gateway:
+  security:
+    banned-words:
+      - "ignore all previous"
+      - "system prompt"
+      - "developer mode"
+  tenants:
+    - api-key: "sk-tier-free-123"
+      tier: "free"
+      requests-per-minute: 10
+    - api-key: "sk-tier-pro-456"
+      tier: "pro"
+      requests-per-minute: 100
+  cache:
+    ttl-hours: 24
   routing:
     latency-weight: 0.7
     load-weight: 0.3

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class P99LatencyRouter implements RoutingStrategy {
@@ -20,7 +21,7 @@ public class P99LatencyRouter implements RoutingStrategy {
     }
 
     @Override
-    public Optional<BackendInstance> selectBackend(String model) {
+    public Optional<BackendInstance> selectBackend(String model, Set<String> excludedBackendIds) {
         List<BackendInstance> candidates = registry.getHealthyBackendsForModel(model);
         if (candidates.isEmpty()) return Optional.empty();
 
@@ -28,6 +29,7 @@ public class P99LatencyRouter implements RoutingStrategy {
         double aw = properties.getRouting().getLoadWeight();
 
         return candidates.stream()
+                .filter(b -> excludedBackendIds == null || !excludedBackendIds.contains(b.getId()))
                 .min(Comparator.comparingDouble(b -> b.routingScore(lw, aw)));
     }
 }

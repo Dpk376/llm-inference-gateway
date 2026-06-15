@@ -14,7 +14,27 @@ public class GatewayProperties {
 
     private Routing routing = new Routing();
     private CircuitBreaker circuitBreaker = new CircuitBreaker();
+    private Cache cache = new Cache();
+    private Security security = new Security();
     private List<BackendConfig> backends = new ArrayList<>();
+    private List<TenantConfig> tenants = new ArrayList<>();
+
+    @Data
+    public static class Security {
+        private List<String> bannedWords = new ArrayList<>();
+    }
+
+    @Data
+    public static class TenantConfig {
+        private String apiKey;
+        private String tier;
+        private int requestsPerMinute;
+    }
+
+    @Data
+    public static class Cache {
+        private int ttlHours = 24;
+    }
 
     @Data
     public static class Routing {

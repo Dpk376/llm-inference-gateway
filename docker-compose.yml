@@ -7,6 +7,15 @@ services:
       - "8080:8080"
     networks:
       - monitoring
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - monitoring
 
   prometheus:
     image: prom/prometheus:v2.51.0
