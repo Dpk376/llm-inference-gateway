@@ -41,6 +41,7 @@ public class GatewayProperties {
         private double latencyWeight = 0.7;
         private double loadWeight = 0.3;
         private long healthCheckIntervalMs = 10_000L;
+        private java.util.Map<String, String> fallbacks = new java.util.HashMap<>();
     }
 
     @Data

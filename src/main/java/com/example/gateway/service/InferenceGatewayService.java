@@ -132,9 +132,7 @@ public class InferenceGatewayService {
         long start = System.currentTimeMillis();
 
         return Mono.defer(() -> {
-            BackendInstance backend = router.selectBackend(request.getModel(), excludedBackends)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "No healthy backends available for model: " + request.getModel()));
+            BackendInstance backend = selectBackendWithFallback(request.getModel(), excludedBackends, request);
 
             excludedBackends.add(backend.getId());
             CircuitBreaker cb = cbRegistry.circuitBreaker(backend.getId());
@@ -182,9 +180,7 @@ public class InferenceGatewayService {
             Set<String> excludedBackends = new CopyOnWriteArraySet<>();
 
             return Flux.defer(() -> {
-                BackendInstance backend = router.selectBackend(request.getModel(), excludedBackends)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No healthy backends available for model: " + request.getModel()));
+                BackendInstance backend = selectBackendWithFallback(request.getModel(), excludedBackends, request);
 
                 excludedBackends.add(backend.getId());
                 CircuitBreaker cb = cbRegistry.circuitBreaker(backend.getId());
@@ -222,6 +218,22 @@ public class InferenceGatewayService {
                     .filter(this::isRetryable)
                     .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
         });
+    }
+
+    private BackendInstance selectBackendWithFallback(String requestedModel, Set<String> excludedBackends, InferenceRequest originalRequest) {
+        String currentModel = requestedModel;
+        while (currentModel != null) {
+            BackendInstance backend = router.selectBackend(currentModel, excludedBackends).orElse(null);
+            if (backend != null) {
+                if (!currentModel.equals(requestedModel)) {
+                    log.info("Fallback routing triggered: {} -> {}", requestedModel, currentModel);
+                    originalRequest.setModel(currentModel);
+                }
+                return backend;
+            }
+            currentModel = properties.getRouting().getFallbacks().get(currentModel);
+        }
+        throw new IllegalStateException("No healthy backends available for model: " + requestedModel + " (or its fallbacks)");
     }
 
     private boolean isRetryable(Throwable t) {
